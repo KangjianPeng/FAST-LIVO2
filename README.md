@@ -10,11 +10,13 @@
 
 ### 📬 Contact
 
-If you have any questions, please feel free to contact: Chunran Zheng [zhengcr@connect.hku.hk](mailto:zhengcr@connect.hku.hk).
+For further inquiries or assistance, please contact [zhengcr@connect.hku.hk](mailto:zhengcr@connect.hku.hk).
 
 ## 1. Introduction
 
 FAST-LIVO2 is an efficient and accurate LiDAR-inertial-visual fusion localization and mapping system, demonstrating significant potential for real-time 3D reconstruction and onboard robotic localization in severely degraded environments.
+
+**Developer**: [Chunran Zheng 郑纯然](https://github.com/xuankuzcr)
 
 <div align="center">
     <img src="pics/Framework.png" width = 100% >
@@ -28,28 +30,35 @@ Our accompanying video is now available on [**Bilibili**](https://www.bilibili.c
 
 [FAST-LIVO2: Fast, Direct LiDAR-Inertial-Visual Odometry](https://arxiv.org/pdf/2408.14035)  
 
+[FAST-LIVO2 on Resource-Constrained Platforms](https://arxiv.org/pdf/2501.13876)  
+
 [FAST-LIVO: Fast and Tightly-coupled Sparse-Direct LiDAR-Inertial-Visual Odometry](https://arxiv.org/pdf/2203.00893)
+
+[FAST-Calib: LiDAR-Camera Extrinsic Calibration in One Second](https://www.arxiv.org/pdf/2507.17210)
 
 ### 1.3 Our hard-synchronized equipment
 
 We open-source our handheld device, including CAD files, synchronization scheme, STM32 source code, wiring instructions, and sensor ROS driver. Access these resources at this repository: [**LIV_handhold**](https://github.com/xuankuzcr/LIV_handhold).
 
 ### 1.4 Our associate dataset: FAST-LIVO2-Dataset
-Our associate dataset [**FAST-LIVO2-Dataset**](https://connecthkuhk-my.sharepoint.com/:f:/g/personal/zhengcr_connect_hku_hk/ErdFNQtjMxZOorYKDTtK4ugBkogXfq1OfDm90GECouuIQA?e=KngY9Z) used for evaluation is also available online. **Please note that the dataset is being uploaded gradually.**
+Our associate dataset [**FAST-LIVO2-Dataset**](https://connecthkuhk-my.sharepoint.com/:f:/g/personal/zhengcr_connect_hku_hk/ErdFNQtjMxZOorYKDTtK4ugBkogXfq1OfDm90GECouuIQA?e=KngY9Z) used for evaluation is also available online.
+
+### 1.5 Our LiDAR-camera calibration method
+The [**FAST-Calib**](https://github.com/hku-mars/FAST-Calib) toolkit is recommended. Its output extrinsic parameters can be directly filled into the YAML file. 
 
 ## 2. Prerequisited
 
 ### 2.1 Ubuntu and ROS
 
-Ubuntu 16.04~20.04.  [ROS Installation](http://wiki.ros.org/ROS/Installation).
+Ubuntu 18.04~20.04.  [ROS Installation](http://wiki.ros.org/ROS/Installation).
 
 ### 2.2 PCL && Eigen && OpenCV
 
-PCL>=1.6, Follow [PCL Installation](https://pointclouds.org/). 
+PCL>=1.8, Follow [PCL Installation](https://pointclouds.org/). 
 
 Eigen>=3.3.4, Follow [Eigen Installation](https://eigen.tuxfamily.org/index.php?title=Main_Page).
 
-OpenCV>=3.2, Follow [Opencv Installation](http://opencv.org/).
+OpenCV>=4.2, Follow [Opencv Installation](http://opencv.org/).
 
 ### 2.3 Sophus
 
@@ -74,10 +83,6 @@ cd catkin_ws/src
 git clone https://github.com/xuankuzcr/rpg_vikit.git 
 ```
 
-### 2.5 **livox_ros_driver**
-
-Follow [livox_ros_driver Installation](https://github.com/Livox-SDK/livox_ros_driver).
-
 ## 3. Build
 
 Clone the repository and catkin_make:
@@ -92,7 +97,7 @@ source ~/catkin_ws/devel/setup.bash
 
 ## 4. Run our examples
 
-Download our collected rosbag files via OneDrive ([**FAST-LIVO2-Dataset**](https://connecthkuhk-my.sharepoint.com/:f:/g/personal/zhengcr_connect_hku_hk/ErdFNQtjMxZOorYKDTtK4ugBkogXfq1OfDm90GECouuIQA?e=KngY9Z)). 
+Download FAST-LIVO2-Dataset from [Global-LVBA](https://github.com/xuankuzcr/Global-LVBA) Section IV.
 
 ```
 roslaunch fast_livo mapping_avia.launch
