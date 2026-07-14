@@ -14,7 +14,7 @@ which is included as part of this source code package.
 #define PREPROCESS_H_
 
 #include "common_lib.h"
-#include <livox_interfaces/msg/custom_msg.hpp>
+#include <fast_livo/msg/custom_msg.hpp>
 #include <pcl_conversions/pcl_conversions.h>
 
 using namespace std;
@@ -155,7 +155,7 @@ public:
   Preprocess();
   ~Preprocess();
 
-  void process(const livox_interfaces::msg::CustomMsg::ConstPtr &msg, PointCloudXYZI::Ptr &pcl_out);
+  void process(const fast_livo::msg::CustomMsg::ConstPtr &msg, PointCloudXYZI::Ptr &pcl_out);
   void process(const sensor_msgs::msg::PointCloud2::ConstPtr &msg, PointCloudXYZI::Ptr &pcl_out);
   void set(bool feat_en, int lid_type, double bld, int pfilt_num);
 
@@ -170,7 +170,7 @@ public:
   rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr pub_full, pub_surf, pub_corn;
 
 private:
-  void avia_handler(const livox_interfaces::msg::CustomMsg::ConstPtr &msg);
+  void avia_handler(const fast_livo::msg::CustomMsg::ConstPtr &msg);
   void oust64_handler(const sensor_msgs::msg::PointCloud2::ConstPtr &msg);
   void velodyne_handler(const sensor_msgs::msg::PointCloud2::ConstPtr &msg);
   void xt32_handler(const sensor_msgs::msg::PointCloud2::ConstPtr &msg);

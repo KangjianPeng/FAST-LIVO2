@@ -46,11 +46,11 @@ Our associate dataset [**FAST-LIVO2-Dataset**](https://connecthkuhk-my.sharepoin
 ### 1.5 Our LiDAR-camera calibration method
 The [**FAST-Calib**](https://github.com/hku-mars/FAST-Calib) toolkit is recommended. Its output extrinsic parameters can be directly filled into the YAML file. 
 
-## 2. Prerequisited
+## 2. Prerequisites
 
 ### 2.1 Ubuntu and ROS
 
-Ubuntu 18.04~20.04.  [ROS Installation](http://wiki.ros.org/ROS/Installation).
+Ubuntu 22.04 with [ROS 2 Humble](https://docs.ros.org/en/humble/Installation.html).
 
 ### 2.2 PCL && Eigen && OpenCV
 
@@ -75,33 +75,57 @@ sudo make install
 
 ### 2.4 Vikit
 
-Vikit contains camera models, some math and interpolation functions that we need. Vikit is a catkin project, therefore, download it into your catkin workspace source folder.
+Vikit contains the camera models and vision utilities used by FAST-LIVO2. The
+ROS 2-compatible source revision is pinned as a Git submodule and built as part
+of this package; no system-wide Vikit installation is required.
 
 ```bash
-# Different from the one used in fast-livo1
-cd catkin_ws/src
-git clone https://github.com/xuankuzcr/rpg_vikit.git 
+git submodule update --init --recursive
 ```
+
+### 2.5 Livox message compatibility
+
+This ROS 2 branch generates the Livox custom point-cloud interfaces directly
+from [`msg/CustomPoint.msg`](msg/CustomPoint.msg) and
+[`msg/CustomMsg.msg`](msg/CustomMsg.msg). Their fields and serialization order
+match the original `livox_ros_driver/CustomPoint` and
+`livox_ros_driver/CustomMsg` definitions bundled by upstream FAST-LIVO2.
+
+The generated ROS 2 topic type is:
+
+```text
+fast_livo/msg/CustomMsg
+```
+
+The former `include/livox_ros_driver/Custom*.h` files were ROS 1 `gencpp`
+output and depended on ROS 1 serialization headers. They are intentionally not
+used or shipped by this ROS 2 branch.
+
+ROS middleware matches both topic name and message type. A ROS 1 bag or a ROS
+2 driver publishing `livox_ros_driver2/msg/CustomMsg` must therefore be
+converted or adapted to `fast_livo/msg/CustomMsg`; changing only the topic name
+is not sufficient.
 
 ## 3. Build
 
-Clone the repository and catkin_make:
+Clone the ROS 2 branch together with its submodules, then build with colcon:
 
-```
-cd ~/catkin_ws/src
-git clone https://github.com/hku-mars/FAST-LIVO2
-cd ../
-catkin_make
-source ~/catkin_ws/devel/setup.bash
+```bash
+git clone --recurse-submodules -b humble \
+  https://github.com/KangjianPeng/FAST-LIVO2.git
+cd FAST-LIVO2
+source /opt/ros/humble/setup.bash
+colcon build --symlink-install
+source install/setup.bash
 ```
 
 ## 4. Run our examples
 
 Download FAST-LIVO2-Dataset from [Global-LVBA](https://github.com/xuankuzcr/Global-LVBA) Section IV.
 
-```
-roslaunch fast_livo mapping_avia.launch
-rosbag play YOUR_DOWNLOADED.bag
+```bash
+ros2 launch fast_livo mapping_avia.launch.py rviz:=true
+ros2 bag play YOUR_ROS2_BAG
 ```
 
 

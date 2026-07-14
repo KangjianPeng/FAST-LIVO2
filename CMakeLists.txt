@@ -65,6 +65,13 @@ endif()
 # find dependencies
 find_package(ament_cmake_auto REQUIRED)
 ament_auto_find_build_dependencies()
+find_package(rosidl_default_generators REQUIRED)
+
+rosidl_generate_interfaces(${PROJECT_NAME}
+  "msg/CustomPoint.msg"
+  "msg/CustomMsg.msg"
+  DEPENDENCIES std_msgs
+)
 
 # Check for OpenMP support
 find_package(OpenMP QUIET)
@@ -86,20 +93,62 @@ else()
 endif()
 
 # Include directories
+set(VIKIT_COMMON_DIR "${CMAKE_CURRENT_SOURCE_DIR}/third_party/rpg_vikit_ros2/vikit_common")
+if(NOT EXISTS "${VIKIT_COMMON_DIR}/include/vikit/abstract_camera.h")
+  message(FATAL_ERROR
+    "Vikit submodule is missing. Run: git submodule update --init --recursive")
+endif()
+
+find_path(SOPHUS_INCLUDE_DIR sophus/se3.h REQUIRED)
+find_library(SOPHUS_LIBRARY Sophus REQUIRED)
+
 include_directories(
   include
+  "${VIKIT_COMMON_DIR}/include"
 )
 
 # Add libraries
+add_library(fast_livo_vikit_common STATIC
+  "${VIKIT_COMMON_DIR}/src/atan_camera.cpp"
+  "${VIKIT_COMMON_DIR}/src/omni_camera.cpp"
+  "${VIKIT_COMMON_DIR}/src/math_utils.cpp"
+  "${VIKIT_COMMON_DIR}/src/vision.cpp"
+  "${VIKIT_COMMON_DIR}/src/performance_monitor.cpp"
+  "${VIKIT_COMMON_DIR}/src/robust_cost.cpp"
+  "${VIKIT_COMMON_DIR}/src/user_input_thread.cpp"
+  "${VIKIT_COMMON_DIR}/src/pinhole_camera.cpp"
+  "${VIKIT_COMMON_DIR}/src/equidistant_camera.cpp"
+  "${VIKIT_COMMON_DIR}/src/polynomial_camera.cpp"
+  "${VIKIT_COMMON_DIR}/src/homography.cpp"
+  "${VIKIT_COMMON_DIR}/src/img_align.cpp"
+)
+set_target_properties(fast_livo_vikit_common PROPERTIES POSITION_INDEPENDENT_CODE ON)
+target_include_directories(fast_livo_vikit_common
+  PUBLIC
+    "${VIKIT_COMMON_DIR}/include"
+    ${EIGEN3_INCLUDE_DIRS}
+    ${OpenCV_INCLUDE_DIRS}
+    ${SOPHUS_INCLUDE_DIR}
+)
+target_link_libraries(fast_livo_vikit_common ${OpenCV_LIBS} ${SOPHUS_LIBRARY})
+ament_target_dependencies(fast_livo_vikit_common rclcpp)
+
 ament_auto_add_library(vio src/vio.cpp src/frame.cpp src/visual_point.cpp)
 ament_auto_add_library(lio src/voxel_map.cpp)
 ament_auto_add_library(pre src/preprocess.cpp)
 ament_auto_add_library(imu_proc src/IMU_Processing.cpp)
 ament_auto_add_library(laser_mapping src/LIVMapper.cpp)
+target_link_libraries(vio fast_livo_vikit_common)
+
+rosidl_get_typesupport_target(cpp_typesupport_target
+  ${PROJECT_NAME} rosidl_typesupport_cpp)
+target_link_libraries(pre "${cpp_typesupport_target}")
+target_link_libraries(laser_mapping "${cpp_typesupport_target}")
 
 # Add the main executable
 ament_auto_add_executable(fastlivo_mapping src/main.cpp)
-target_link_libraries(fastlivo_mapping vio lio pre imu_proc laser_mapping)
+target_link_libraries(fastlivo_mapping
+  vio lio pre imu_proc laser_mapping "${cpp_typesupport_target}")
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)

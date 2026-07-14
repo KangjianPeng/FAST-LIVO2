@@ -11,6 +11,105 @@ which is included as part of this source code package.
 */
 
 #include "LIVMapper.h"
+#include <vikit/atan_camera.h>
+#include <vikit/equidistant_camera.h>
+#include <vikit/omni_camera.h>
+#include <vikit/polynomial_camera.h>
+
+namespace
+{
+std::string cameraParameterName(const std::string &ns, const std::string &name)
+{
+  return ns.empty() ? name : ns + "." + name;
+}
+
+template <typename T>
+T cameraParameter(const rclcpp::Node::SharedPtr &node, const std::string &name, const T &default_value)
+{
+  if (!node->has_parameter(name))
+    return node->declare_parameter<T>(name, default_value);
+
+  T value = default_value;
+  node->get_parameter(name, value);
+  return value;
+}
+
+bool loadCamera(const rclcpp::Node::SharedPtr &node, const std::string &ns, vk::AbstractCamera *&camera)
+{
+  const auto key = [&ns](const std::string &name) { return cameraParameterName(ns, name); };
+  const std::string model = cameraParameter<std::string>(node, key("cam_model"), "");
+
+  if (model == "Ocam")
+  {
+    camera = new vk::OmniCamera(cameraParameter<std::string>(node, key("cam_calib_file"), ""));
+  }
+  else if (model == "Pinhole")
+  {
+    camera = new vk::PinholeCamera(
+      cameraParameter<int>(node, key("cam_width"), 0),
+      cameraParameter<int>(node, key("cam_height"), 0),
+      cameraParameter<double>(node, key("scale"), 1.0),
+      cameraParameter<double>(node, key("cam_fx"), 0.0),
+      cameraParameter<double>(node, key("cam_fy"), 0.0),
+      cameraParameter<double>(node, key("cam_cx"), 0.0),
+      cameraParameter<double>(node, key("cam_cy"), 0.0),
+      cameraParameter<double>(node, key("cam_d0"), 0.0),
+      cameraParameter<double>(node, key("cam_d1"), 0.0),
+      cameraParameter<double>(node, key("cam_d2"), 0.0),
+      cameraParameter<double>(node, key("cam_d3"), 0.0));
+  }
+  else if (model == "EquidistantCamera")
+  {
+    camera = new vk::EquidistantCamera(
+      cameraParameter<int>(node, key("cam_width"), 0),
+      cameraParameter<int>(node, key("cam_height"), 0),
+      cameraParameter<double>(node, key("scale"), 1.0),
+      cameraParameter<double>(node, key("cam_fx"), 0.0),
+      cameraParameter<double>(node, key("cam_fy"), 0.0),
+      cameraParameter<double>(node, key("cam_cx"), 0.0),
+      cameraParameter<double>(node, key("cam_cy"), 0.0),
+      cameraParameter<double>(node, key("k1"), 0.0),
+      cameraParameter<double>(node, key("k2"), 0.0),
+      cameraParameter<double>(node, key("k3"), 0.0),
+      cameraParameter<double>(node, key("k4"), 0.0));
+  }
+  else if (model == "PolynomialCamera")
+  {
+    camera = new vk::PolynomialCamera(
+      cameraParameter<int>(node, key("cam_width"), 0),
+      cameraParameter<int>(node, key("cam_height"), 0),
+      cameraParameter<double>(node, key("cam_fx"), 0.0),
+      cameraParameter<double>(node, key("cam_fy"), 0.0),
+      cameraParameter<double>(node, key("cam_cx"), 0.0),
+      cameraParameter<double>(node, key("cam_cy"), 0.0),
+      cameraParameter<double>(node, key("cam_skew"), 0.0),
+      cameraParameter<double>(node, key("k2"), 0.0),
+      cameraParameter<double>(node, key("k3"), 0.0),
+      cameraParameter<double>(node, key("k4"), 0.0),
+      cameraParameter<double>(node, key("k5"), 0.0),
+      cameraParameter<double>(node, key("k6"), 0.0),
+      cameraParameter<double>(node, key("k7"), 0.0));
+  }
+  else if (model == "ATAN")
+  {
+    camera = new vk::ATANCamera(
+      cameraParameter<int>(node, key("cam_width"), 0),
+      cameraParameter<int>(node, key("cam_height"), 0),
+      cameraParameter<double>(node, key("cam_fx"), 0.0),
+      cameraParameter<double>(node, key("cam_fy"), 0.0),
+      cameraParameter<double>(node, key("cam_cx"), 0.0),
+      cameraParameter<double>(node, key("cam_cy"), 0.0),
+      cameraParameter<double>(node, key("cam_d0"), 0.0));
+  }
+  else
+  {
+    camera = nullptr;
+    return false;
+  }
+
+  return true;
+}
+} // namespace
 
 LIVMapper::LIVMapper(rclcpp::Node::SharedPtr &nh)
     : nh_(nh), extT(0, 0, 0),
@@ -124,7 +223,7 @@ void LIVMapper::initializeComponents()
   voxelmap_manager->extT_ << VEC_FROM_ARRAY(extrinT);
   voxelmap_manager->extR_ << MAT_FROM_ARRAY(extrinR);
 
-  if (!vk::camera_loader::loadFromRosNs(nh_, "camera", vio_manager->cam))
+  if (!loadCamera(nh_, "camera", vio_manager->cam))
     throw std::runtime_error("Camera model not correctly specified.");
 
   vio_manager->grid_size = grid_size;
@@ -203,7 +302,7 @@ void LIVMapper::initializeSubscribersAndPublishers(rclcpp::Node::SharedPtr &nh, 
 {
   if (p_pre->lidar_type == AVIA)
   {
-    sub_lv_pcl =  nh->create_subscription<livox_interfaces::msg::CustomMsg>(lid_topic, 200000, std::bind(&LIVMapper::livox_pcl_cbk, this, std::placeholders::_1));
+    sub_lv_pcl =  nh->create_subscription<fast_livo::msg::CustomMsg>(lid_topic, 200000, std::bind(&LIVMapper::livox_pcl_cbk, this, std::placeholders::_1));
   }
   else
   {
@@ -753,12 +852,12 @@ void LIVMapper::standard_pcl_cbk(const sensor_msgs::msg::PointCloud2::ConstPtr &
   sig_buffer.notify_all();
 }
 
-void LIVMapper::livox_pcl_cbk(const livox_interfaces::msg::CustomMsg::ConstPtr &msg_in)
+void LIVMapper::livox_pcl_cbk(const fast_livo::msg::CustomMsg::ConstPtr &msg_in)
 {
   if (!lidar_en)
     return;
   mtx_buffer.lock();
-  livox_interfaces::msg::CustomMsg::Ptr msg(new livox_interfaces::msg::CustomMsg(*msg_in));
+  fast_livo::msg::CustomMsg::Ptr msg(new fast_livo::msg::CustomMsg(*msg_in));
   // if ((abs(msg->header.stamp.toSec() - last_timestamp_lidar) > 0.2 && last_timestamp_lidar > 0) || sync_jump_flag)
   // {
   //   ROS_WARN("lidar jumps %.3f\n", msg->header.stamp.toSec() - last_timestamp_lidar);

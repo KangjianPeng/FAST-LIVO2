@@ -19,7 +19,6 @@ which is included as part of this source code package.
 #include <cv_bridge/cv_bridge.h>
 #include <image_transport/image_transport.h>
 #include <nav_msgs/msg/path.hpp>
-#include <vikit/camera_loader.h>
 
 class LIVMapper
 {
@@ -46,7 +45,7 @@ public:
   void RGBpointBodyLidarToIMU(PointType const *const pi, PointType *const po);
   void RGBpointBodyToWorld(PointType const *const pi, PointType *const po);
   void standard_pcl_cbk(const sensor_msgs::msg::PointCloud2::ConstPtr &msg);
-  void livox_pcl_cbk(const livox_interfaces::msg::CustomMsg::ConstPtr &msg_in);
+  void livox_pcl_cbk(const fast_livo::msg::CustomMsg::ConstPtr &msg_in);
   void imu_cbk(const sensor_msgs::msg::Imu::ConstPtr &msg_in);
   void img_cbk(const sensor_msgs::msg::Image::ConstPtr &msg_in);
   void publish_img_rgb(const image_transport::Publisher &pubImage, VIOManagerPtr vio_manager);
@@ -161,7 +160,7 @@ public:
 
   rclcpp::Publisher<visualization_msgs::msg::Marker>::SharedPtr plane_pub;
   rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr voxel_pub;
-  rclcpp::Subscription<livox_interfaces::msg::CustomMsg>::SharedPtr sub_lv_pcl;
+  rclcpp::Subscription<fast_livo::msg::CustomMsg>::SharedPtr sub_lv_pcl;
   rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr sub_pcl;
   rclcpp::Subscription<sensor_msgs::msg::Imu>::SharedPtr sub_imu;
   rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr sub_img;
