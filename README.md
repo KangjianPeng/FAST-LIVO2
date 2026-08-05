@@ -18,7 +18,7 @@ FAST-LIVO2 is an efficient and accurate LiDAR-inertial-visual fusion localizatio
 
 **Developer**: [Chunran Zheng](https://github.com/xuankuzcr)
 
-## KangjianPeng Fork Changes
+## Fork Changes
 
 This fork provides the ROS 2 Humble port of FAST-LIVO2, including ROS 2
 interfaces, `ament_cmake` build files, and ROS 2-compatible Vikit and Sophus
