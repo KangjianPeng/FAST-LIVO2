@@ -16,6 +16,8 @@ which is included as part of this source code package.
 #include <vikit/omni_camera.h>
 #include <vikit/polynomial_camera.h>
 
+#include <algorithm>
+
 namespace
 {
 std::string cameraParameterName(const std::string &ns, const std::string &name)
@@ -323,7 +325,6 @@ void LIVMapper::initializeSubscribersAndPublishers(rclcpp::Node::SharedPtr &nh, 
   pubLaserCloudDyn = nh->create_publisher<sensor_msgs::msg::PointCloud2>("/dyn_obj", 100);
   pubLaserCloudDynRmed = nh->create_publisher<sensor_msgs::msg::PointCloud2>("/dyn_obj_removed", 100);
   pubLaserCloudDynDbg = nh->create_publisher<sensor_msgs::msg::PointCloud2>("/dyn_obj_dbg_hist", 100);
-  mavros_pose_publisher = nh->create_publisher<geometry_msgs::msg::PoseStamped>("/mavros/vision_pose/pose", 10);
   pubImage = it.advertise("/rgb_img", 1);
   pubImuPropOdom = nh->create_publisher<nav_msgs::msg::Odometry>("/LIVO2/imu_propagate", 10000);
   imu_prop_timer = nh->create_wall_timer(std::chrono::milliseconds(4), std::bind(&LIVMapper::imu_prop_callback, this));
@@ -569,7 +570,6 @@ void LIVMapper::handleLIO()
   if (voxelmap_manager->config_setting_.is_pub_plane_map_)
     voxelmap_manager->pubVoxelMap();
   publish_path(pubPath);
-  publish_mavros(mavros_pose_publisher);
 
   frame_num++;
   aver_time_consu = aver_time_consu * (frame_num - 1) / frame_num + (t4 - t0) / frame_num;
@@ -1500,12 +1500,47 @@ void LIVMapper::set_posestamp(T &out)
   out.orientation.w = geoQuat.w;
 }
 
+void LIVMapper::set_odometry_covariance()
+{
+  // StatesGroup stores [rotation, position, exposure, velocity, ...].
+  constexpr int pose_state_index[6] = {3, 4, 5, 0, 1, 2};
+  for (int row = 0; row < 6; ++row)
+  {
+    for (int column = 0; column < 6; ++column)
+    {
+      odomAftMapped.pose.covariance[row * 6 + column] =
+          _state.cov(pose_state_index[row], pose_state_index[column]);
+    }
+  }
+
+  constexpr int velocity_state_index[3] = {7, 8, 9};
+  for (int row = 0; row < 3; ++row)
+  {
+    for (int column = 0; column < 3; ++column)
+    {
+      odomAftMapped.twist.covariance[row * 6 + column] =
+          _state.cov(velocity_state_index[row], velocity_state_index[column]);
+    }
+  }
+
+  const double angular_velocity_variance = std::max(gyr_cov, 1.0e-6);
+  for (int index = 3; index < 6; ++index)
+  {
+    odomAftMapped.twist.covariance[index * 6 + index] =
+        angular_velocity_variance;
+  }
+}
+
 void LIVMapper::publish_odometry(const rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr &pubOdomAftMapped)
 {
   odomAftMapped.header.frame_id = "camera_init";
   odomAftMapped.child_frame_id = "aft_mapped";
   odomAftMapped.header.stamp = nh_->now(); //.ros::Time()fromSec(last_timestamp_lidar);
   set_posestamp(odomAftMapped.pose.pose);
+  odomAftMapped.twist.twist.linear.x = _state.vel_end(0);
+  odomAftMapped.twist.twist.linear.y = _state.vel_end(1);
+  odomAftMapped.twist.twist.linear.z = _state.vel_end(2);
+  set_odometry_covariance();
 
   static tf2_ros::TransformBroadcaster br(*nh_);
   tf2::Transform transform;
@@ -1525,14 +1560,6 @@ void LIVMapper::publish_odometry(const rclcpp::Publisher<nav_msgs::msg::Odometry
 
   // br.sendTransform(tf2::toMsg(transform, odomAftMapped.header.stamp, "camera_init", "aft_mapped"));
   pubOdomAftMapped->publish(odomAftMapped);
-}
-
-void LIVMapper::publish_mavros(const rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr &mavros_pose_publisher)
-{
-  msg_body_pose.header.stamp = nh_->now();
-  msg_body_pose.header.frame_id = "camera_init";
-  set_posestamp(msg_body_pose.pose);
-  mavros_pose_publisher->publish(msg_body_pose);
 }
 
 void LIVMapper::publish_path(const rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr pubPath)

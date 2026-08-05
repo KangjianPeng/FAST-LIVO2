@@ -99,15 +99,30 @@ if(NOT EXISTS "${VIKIT_COMMON_DIR}/include/vikit/abstract_camera.h")
     "Vikit submodule is missing. Run: git submodule update --init --recursive")
 endif()
 
-find_path(SOPHUS_INCLUDE_DIR sophus/se3.h REQUIRED)
-find_library(SOPHUS_LIBRARY Sophus REQUIRED)
+set(SOPHUS_DIR "${CMAKE_CURRENT_SOURCE_DIR}/third_party/Sophus")
+if(NOT EXISTS "${SOPHUS_DIR}/sophus/se3.h")
+  message(FATAL_ERROR
+    "Sophus submodule is missing. Run: git submodule update --init --recursive")
+endif()
 
 include_directories(
   include
   "${VIKIT_COMMON_DIR}/include"
+  "${SOPHUS_DIR}"
 )
 
 # Add libraries
+add_library(fast_livo_sophus STATIC
+  "${SOPHUS_DIR}/sophus/so3.cpp"
+  "${SOPHUS_DIR}/sophus/se3.cpp"
+)
+set_target_properties(fast_livo_sophus PROPERTIES POSITION_INDEPENDENT_CODE ON)
+target_include_directories(fast_livo_sophus
+  PUBLIC
+    "${SOPHUS_DIR}"
+    ${EIGEN3_INCLUDE_DIRS}
+)
+
 add_library(fast_livo_vikit_common STATIC
   "${VIKIT_COMMON_DIR}/src/atan_camera.cpp"
   "${VIKIT_COMMON_DIR}/src/omni_camera.cpp"
@@ -128,9 +143,9 @@ target_include_directories(fast_livo_vikit_common
     "${VIKIT_COMMON_DIR}/include"
     ${EIGEN3_INCLUDE_DIRS}
     ${OpenCV_INCLUDE_DIRS}
-    ${SOPHUS_INCLUDE_DIR}
+    "${SOPHUS_DIR}"
 )
-target_link_libraries(fast_livo_vikit_common ${OpenCV_LIBS} ${SOPHUS_LIBRARY})
+target_link_libraries(fast_livo_vikit_common ${OpenCV_LIBS} fast_livo_sophus)
 ament_target_dependencies(fast_livo_vikit_common rclcpp)
 
 ament_auto_add_library(vio src/vio.cpp src/frame.cpp src/visual_point.cpp)
@@ -148,7 +163,7 @@ target_link_libraries(laser_mapping "${cpp_typesupport_target}")
 # Add the main executable
 ament_auto_add_executable(fastlivo_mapping src/main.cpp)
 target_link_libraries(fastlivo_mapping
-  vio lio pre imu_proc laser_mapping "${cpp_typesupport_target}")
+  vio lio pre imu_proc laser_mapping fast_livo_sophus "${cpp_typesupport_target}")
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)

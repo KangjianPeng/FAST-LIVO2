@@ -1,3 +1,6 @@
 [submodule "rpg_vikit_ros2"]
 	path = third_party/rpg_vikit_ros2
 	url = https://github.com/pcl5/rpg_vikit_ros2.git
+[submodule "third_party/Sophus"]
+	path = third_party/Sophus
+	url = https://github.com/strasdat/Sophus.git
