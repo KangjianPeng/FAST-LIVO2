@@ -16,7 +16,22 @@ For further inquiries or assistance, please contact [zhengcr@connect.hku.hk](mai
 
 FAST-LIVO2 is an efficient and accurate LiDAR-inertial-visual fusion localization and mapping system, demonstrating significant potential for real-time 3D reconstruction and onboard robotic localization in severely degraded environments.
 
-**Developer**: [Chunran Zheng 郑纯然](https://github.com/xuankuzcr)
+**Developer**: [Chunran Zheng](https://github.com/xuankuzcr)
+
+## KangjianPeng Fork Changes
+
+This fork provides the ROS 2 Humble port of FAST-LIVO2, including ROS 2
+interfaces, `ament_cmake` build files, and ROS 2-compatible Vikit and Sophus
+submodules. The mapping node publishes `/aft_mapped_to_init` as
+`nav_msgs/msg/Odometry` with covariance values populated from the FAST-LIVO2
+EKF state: position and orientation covariance come from the pose state,
+linear velocity covariance comes from the velocity state, and angular
+velocity covariance uses the configured gyroscope variance.
+
+The fork also includes a Gazebo Sim configuration for the simulated camera,
+IMU, and Mid-360 input stream. Start it with
+`ros2 launch fast_livo mapping_gazebo.launch.py rviz:=true` after building and
+sourcing the workspace.
 
 <div align="center">
     <img src="pics/Framework.png" width = 100% >
@@ -108,7 +123,7 @@ is not sufficient.
 
 ## 3. Build
 
-Clone the ROS 2 branch together with its submodules, then build with colcon:
+Clone this ROS 2 branch together with its submodules, then build with colcon:
 
 ```bash
 git clone --recurse-submodules -b humble \
