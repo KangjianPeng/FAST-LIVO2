@@ -54,7 +54,6 @@ public:
   void publish_visual_sub_map(const ros::Publisher &pubSubVisualMap);
   void publish_effect_world(const ros::Publisher &pubLaserCloudEffect, const std::vector<PointToPlane> &ptpl_list);
   void publish_odometry(const ros::Publisher &pubOdomAftMapped);
-  void publish_mavros(const ros::Publisher &mavros_pose_publisher);
   void publish_path(const ros::Publisher pubPath);
   void readParameters(ros::NodeHandle &nh);
   template <typename T> void set_posestamp(T &out);
@@ -175,7 +174,6 @@ public:
   ros::Publisher pubLaserCloudDynRmed;
   ros::Publisher pubLaserCloudDynDbg;
   image_transport::Publisher pubImage;
-  ros::Publisher mavros_pose_publisher;
   ros::Timer imu_prop_timer;
 
   int frame_num = 0;
