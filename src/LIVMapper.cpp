@@ -722,11 +722,11 @@ void LIVMapper::standard_pcl_cbk(const sensor_msgs::PointCloud2::ConstPtr &msg)
   sig_buffer.notify_all();
 }
 
-void LIVMapper::livox_pcl_cbk(const livox_ros_driver::CustomMsg::ConstPtr &msg_in)
+void LIVMapper::livox_pcl_cbk(const livox_interfaces::CustomMsg::ConstPtr &msg_in)
 {
   if (!lidar_en) return;
   mtx_buffer.lock();
-  livox_ros_driver::CustomMsg::Ptr msg(new livox_ros_driver::CustomMsg(*msg_in));
+  livox_interfaces::CustomMsg::Ptr msg(new livox_interfaces::CustomMsg(*msg_in));
   // if ((abs(msg->header.stamp.toSec() - last_timestamp_lidar) > 0.2 && last_timestamp_lidar > 0) || sync_jump_flag)
   // {
   //   ROS_WARN("lidar jumps %.3f\n", msg->header.stamp.toSec() - last_timestamp_lidar);
